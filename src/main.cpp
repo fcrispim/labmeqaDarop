@@ -4,7 +4,7 @@
 #include <list>
 
 using Graph             = std::vector < std::vector< double > >;
-using VehiclesCapacity  = std::std::vector< double > ;
+using VehiclesCapacity  = std::vector< double > ;
 
 
 void readInstance(Graph &g, VehiclesCapacity &v, int &requests_number) {
@@ -137,7 +137,7 @@ int main ( void ) {
 		for (int k = 0; i < vehicles_number; ++k) {
 			IloExpr expr1;
 			IloExpr expr2;
-			for (int j = 0; j <= requests_number*2 + 1; ++i) {
+			for (int j = 0; j <= requests_number*2 + 1; ++j) {
 				if(j == i) continue;
 				expr1 += X[j][i][k];
 				expr2 += X[i][j][k];
@@ -148,7 +148,7 @@ int main ( void ) {
 
 	//Collected prize by each vehicle and each visited node:
 	for (int i = 1; i <= requests_number; ++i) {
-		for (int k = 0; k < count; ++k) {
+		for (int k = 0; k < vehicles_number; ++k) {
 			IloExpr expr;
 			for (int j = 1; j <= requests_number; ++j) {
 				if(j == i) continue;
@@ -159,22 +159,26 @@ int main ( void ) {
 	}
 
 	//Every vehicle leaves the start terminal:
-	for (int k = 0; i < vehicles_number; ++k) {
+	for (int k = 0; k < vehicles_number; ++k) {
 		IloExpr expr;
 		for (int j = 0; j <= requests_number*2 + 1; ++j) {
 			expr += X[0][j][k];
 		}
-		model.add(expr = 1);
+		IloExpr one;
+		one += 1;
+		model.add(expr = one);
 	}
 
 	//Every vehicle enters the end terminal:
 	IloCplex cplex(model);
-	for (int k = 0; i < vehicles_number; ++k) {
+	for (int k = 0; k < vehicles_number; ++k) {
 		IloExpr expr;
 		for (int i = 0; i <= requests_number*2 + 1; ++i) {
 			expr += X[i][requests_number*2 + 1][k];
 		}
-		model.add(expr = 1);
+		IloExpr one;
+		one += 1;
+		model.add(expr = one);
 	}
 
 
