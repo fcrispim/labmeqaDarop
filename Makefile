@@ -2,10 +2,12 @@ ifeq ($(shell uname), Darwin)
 	CPLEXDIR  = /Applications/ILOG/CPLEX_Studio126/cplex
 	CONCERTDIR = /Applications/ILOG/CPLEX_Studio126/concert
 	SYSTEM = x86-64_osx
+	BCFLAGS = -std=c++11 -stdlib=libstdc++
 else
-	CPLEXDIR  = /usr/ILOG/cplex
+	CPLEXDIR  = /usr/ilog/cplex
 	CONCERTDIR = /usr/ilog/concert
 	SYSTEM = x86-64_sles10_4.1
+	BCFLAGS = -std=c++11
 endif
 
 BITS_OPTION = -m64
@@ -44,7 +46,7 @@ OBJS = $(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SRCS))
 #### regra principal, gera o executavel ####
 bc: $(OBJS) 
 	@echo  "\033[31m \nLinking all objects files: \033[0m"
-	$(CPPC) -std=c++11 -stdlib=libstdc++ $(BITS_OPTION) $(OBJS) -o $@ $(CCLNFLAGS)
+	$(CPPC) $(BCFLAGS) $(BITS_OPTION) $(OBJS) -o $@ $(CCLNFLAGS)
 ############################
 
 #inclui os arquivos de dependencias
