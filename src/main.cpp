@@ -164,9 +164,7 @@ int main ( void ) {
 		for (int j = 0; j <= requests_number*2 + 1; ++j) {
 			expr += X[0][j][k];
 		}
-		IloExpr one;
-		one += 1;
-		model.add(expr = one);
+		model.add(expr == 1);
 	}
 
 	//Every vehicle enters the end terminal:
@@ -176,9 +174,7 @@ int main ( void ) {
 		for (int i = 0; i <= requests_number*2 + 1; ++i) {
 			expr += X[i][requests_number*2 + 1][k];
 		}
-		IloExpr one;
-		one += 1;
-		model.add(expr = one);
+		model.add(expr == 1);
 	}
 
 

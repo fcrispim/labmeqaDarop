@@ -1,10 +1,17 @@
-SYSTEM      = x86-64_osx
+ifeq ($(shell uname), Darwin)
+	CPLEXDIR  = /Applications/ILOG/CPLEX_Studio126/cplex
+	CONCERTDIR = /Applications/ILOG/CPLEX_Studio126/concert
+	SYSTEM = x86-64_osx
+else
+	CPLEXDIR  = /usr/ILOG/cplex
+	CONCERTDIR = /usr/ilog/concert
+	SYSTEM = x86-64_sles10_4.1
+endif
+
 BITS_OPTION = -m64
 LIBFORMAT   = static_pic
 
 #### Diretorios com as libs do cplex ####
-CPLEXDIR  = /Applications/ILOG/CPLEX_Studio126/cplex
-CONCERTDIR = /Applications/ILOG/CPLEX_Studio126/concert
    
 CPLEXLIBDIR   = $(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CONCERTLIBDIR = $(CONCERTDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
