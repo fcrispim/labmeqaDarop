@@ -110,7 +110,7 @@ int main ( void ) {
 
 	//Every request is served at most once: 
 	for (int i = 1; i <= requests_number; ++i) {
-		IloExpr expr;
+		IloExpr expr(env);
 		for (int k = 0; k < vehicles_number; ++k) {
 			for (int j = 0; j <= requests_number*2+1; ++j) {
 				expr += X[i][j][k];
@@ -122,45 +122,45 @@ int main ( void ) {
 	//Same vehicle serves the pickup and delivery:
 	for (int i = 1; i <= requests_number; ++i) {
 		for (int k = 0; k < vehicles_number; ++k) {
-			IloExpr expr1;
-			IloExpr expr2;
+			IloExpr expr1(env);
+			IloExpr expr2(env);
 			for (int j = 0; j <= requests_number*2+1; ++j) {
 				expr1 += X[i][j][k];
 				expr2 += X[requests_number + i][j][k];
 			}
-			model.add( (expr1 - expr2) = 0);
+			model.add( (expr1 - expr2) == 0);
 		}
 	}
 
 	//Same vehicle that enters a node leaves the node:
 	for (int i = 1; i <= requests_number*2; ++i) {
 		for (int k = 0; i < vehicles_number; ++k) {
-			IloExpr expr1;
-			IloExpr expr2;
+			IloExpr expr1(env);
+			IloExpr expr2(env);
 			for (int j = 0; j <= requests_number*2 + 1; ++j) {
 				if(j == i) continue;
 				expr1 += X[j][i][k];
 				expr2 += X[i][j][k];
 			}
-			model.add( (expr1 - expr2) = 0);
+			model.add( (expr1 - expr2) == 0);
 		}
 	}
 
 	//Collected prize by each vehicle and each visited node:
 	for (int i = 1; i <= requests_number; ++i) {
 		for (int k = 0; k < vehicles_number; ++k) {
-			IloExpr expr;
+			IloExpr expr(env);
 			for (int j = 1; j <= requests_number; ++j) {
 				if(j == i) continue;
 				expr += X[i][j][k];
 			}
-			model.add(expr = Y[i][k]);
+			model.add(expr == Y[i][k]);
 		}
 	}
 
 	//Every vehicle leaves the start terminal:
 	for (int k = 0; k < vehicles_number; ++k) {
-		IloExpr expr;
+		IloExpr expr(env);
 		for (int j = 0; j <= requests_number*2 + 1; ++j) {
 			expr += X[0][j][k];
 		}
@@ -170,7 +170,7 @@ int main ( void ) {
 	//Every vehicle enters the end terminal:
 	IloCplex cplex(model);
 	for (int k = 0; k < vehicles_number; ++k) {
-		IloExpr expr;
+		IloExpr expr(env);
 		for (int i = 0; i <= requests_number*2 + 1; ++i) {
 			expr += X[i][requests_number*2 + 1][k];
 		}

@@ -6,7 +6,11 @@ ifeq ($(shell uname), Darwin)
 else
 	CPLEXDIR  = /usr/ilog/cplex
 	CONCERTDIR = /usr/ilog/concert
-	SYSTEM = x86-64_sles10_4.1
+	ifeq ($(MAQUINA), q1)
+		SYSTEM = x86-64_sles10_4.1
+	else
+		SYSTEM = x86-64_linux
+	endif
 	BCFLAGS = -std=c++11
 endif
 
