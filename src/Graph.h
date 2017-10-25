@@ -6,7 +6,7 @@ using namespace std;
 class Node{
 
 public:
-	Node(int v, int w): vertex(v), weight(w){}
+	Node(int v, double w): vertex(v), weight(w){}
 	virtual ~Node(){}
 
 	void printNode(){printf("Vertex = %d - Weight %lf\n", vertex, weight);}

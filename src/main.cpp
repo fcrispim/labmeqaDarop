@@ -47,10 +47,10 @@ void readInstance(char *filename) {
 	//Creates Graph
 	Graph G( (N+2) );
 
-	//Add for each vertex i a new node j
-	for(int i = 1; i < N; ++i){
-		for(int j = 1; j < N; ++j){
-			Node n = Node(j, abs( X[i-1] - Y[j-1]));
+	//Add for each vertex i a new node j using euclidean distance
+	for(int i = 1; i <= N; ++i){
+		for(int j = 1; j <= N; ++j){
+			Node n = Node(j, hypot( (X[i-1]-X[j-1]), (Y[i-1]-Y[j-1])) );
 			G.addNode(n,i);
 		}
 	}
