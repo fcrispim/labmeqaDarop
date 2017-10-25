@@ -1,22 +1,81 @@
 #include <ilcplex/ilocplex.h>
 #include <cstdio>
+#include <iostream>
 #include <vector>
 #include <list>
+#include <cmath>
+#include "Graph.h"
 
-using Graph             = std::vector < std::vector< double > >;
-using VehiclesCapacity  = std::vector< double > ;
+using VehiclesCapacity  = std::vector< int > ;
+using RequestDemand     = std::vector<int> ;
+
+using namespace std;
 
 
-void readInstance(Graph &g, VehiclesCapacity &v, int &requests_number) {
+
+//Graph &g, VehiclesCapacity &v, int &requests_number
+void readInstance(char *filename) {
+	int P, K;
+
+	FILE *input_file = fopen( filename , "r" );
+	fscanf( input_file, "%d %d", &P, &K);
+
+	VehiclesCapacity VC(K);
+	RequestDemand RD(P);
+
+	int N = P*2;
+
+	double X[N], Y[N];
+
+	for (int i = 0; i < P; ++i){
+		fscanf(input_file, "%d", &RD[i]);
+	}
+
+	for (int i = 0; i < K; ++i){
+		fscanf(input_file, "%d", &VC[i]);
+	}
+
+	for(int i = 0; i < N; ++i){
+		fscanf(input_file, "%lf", &X[i]);
+	}
+
+	for(int i = 0; i < N; ++i){
+		fscanf(input_file, "%lf", &Y[i]);
+	}
+
+	
+	//Creates Graph
+	Graph G( (N+2) );
+
+	//Add for each vertex i a new node j
+	for(int i = 1; i < N; ++i){
+		for(int j = 1; j < N; ++j){
+			Node n = Node(j, abs( X[i-1] - Y[j-1]));
+			G.addNode(n,i);
+		}
+	}
+
+	//Add for vertex 0 edges with vertices in P
+	for(int i = 1; i <= P; ++i){
+		Node n(i, 0);
+		G.addNode(n, 0);
+	}
+
+	for (int i = P+1; i <= N; ++i){
+		Node n(i, 0);
+		G.addNode(n, (N+1) );
+	}
+
+	G.printGraph();
+
 	return;
 }
 
 
 
-int main ( void ) {
-
+int main ( int argc, char **argv ) {
 	//read data 
-	Graph            g;
+	/*Graph            g;
 	VehiclesCapacity v;
 	int requests_number;
 
@@ -55,7 +114,7 @@ int main ( void ) {
 				model.add(X[i][j][k]);
 			}
 		}
-	}
+	}*/
 
 	/*
 	//Gik = load of vehicle k after visiting node i
@@ -98,7 +157,7 @@ int main ( void ) {
 	//OBJECTIVE FUNCTION 
 
 	//Maximize the number of served requests:
-	IloExpr OBJ(env);
+	/*IloExpr OBJ(env);
 	for(int i = 1; i <= requests_number; ++i) {
 		for (int k = 0; k < vehicles_number; ++k) {
 			OBJ += Y[i][k];
@@ -175,7 +234,7 @@ int main ( void ) {
 			expr += X[i][requests_number*2 + 1][k];
 		}
 		model.add(expr == 1);
-	}
+	}*/
 
-
+	readInstance(argv[1]);
 }
