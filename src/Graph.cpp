@@ -1,6 +1,9 @@
 #include "Graph.h"
 
-Graph::Graph(int n){
+Graph::Graph(){
+}
+
+void Graph::resizeGraph(int n){
 	G.resize(n);
 }
 

@@ -1,3 +1,6 @@
+#ifndef __GRAPH_H__
+#define __GRAPH_H__
+
 #include <cstdio>
 #include <vector>
 
@@ -19,9 +22,10 @@ private:
 class Graph{
 
 public:
-	Graph(int n);
+	Graph();
 	virtual ~Graph(){}
 
+	void resizeGraph(int n);
 	void addNode(Node n, int vertex);
 	vector<Node> adjList(int vertex);
 	void printGraph();
@@ -29,3 +33,5 @@ public:
 private:
 	vector<vector <Node> > G ;
 };
+
+#endif
