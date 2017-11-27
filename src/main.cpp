@@ -256,7 +256,7 @@ int main ( int argc, char **argv ) {
 	for (int i = 1; i <= n; ++i) {
 		for (int k = 0; k < K; ++k) {
 			IloExpr expr(env);
-			for (int j = 1; j <= n; ++j) {
+			for (int j = 1; j <= V; ++j) {
 				if(j == i) continue;
 				expr += X[i][j][k];
 			}
