@@ -6,5 +6,6 @@
 
 extern int K, N, V, n;
 extern Graph G;
+extern std::vector<int> VC, RD;
 
 #endif

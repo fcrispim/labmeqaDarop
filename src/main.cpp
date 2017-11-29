@@ -7,8 +7,6 @@
 #include "Graph.h"
 #include "globals.h"
 
-using VehiclesCapacity  = std::vector< int > ;
-using RequestDemand     = std::vector<int> ;
 
 using namespace std;
 
@@ -19,9 +17,10 @@ void readInstance(char *filename) {
 	FILE *input_file = fopen( filename , "r" );
 	fscanf( input_file, "%d %d", &n, &K);
 
-	VehiclesCapacity VC(K);
-	RequestDemand RD(n);
 
+	RD.resize(n);
+	VC.resize(K);
+	
 	V = n*2;
 	N = V+2;
 
@@ -43,6 +42,7 @@ void readInstance(char *filename) {
 		fscanf(input_file, "%lf", &Y[i]);
 	}
 
+	
 	
 	//Creates Graph
 	G.resizeGraph(N);
@@ -84,7 +84,7 @@ int main ( int argc, char **argv ) {
 	//readInstance(g, v, requests_number);
 
 	//int vehicles_number = v.size(); 
-	
+
 	//Creates environment and model
 	IloEnv env;
 	IloModel model(env, "The dial-a-ride orienteering problem Problem");
@@ -120,16 +120,17 @@ int main ( int argc, char **argv ) {
 	}
 
 	//Flow variable, for each car
-	/*IloArray <IloArray <IloNumVarArray> >  f(env, N);
+	IloArray <IloNumVarArray>  f(env, N);
 	for (int i = 0; i < N; ++i){
-		f[i] = IloArray<IloNumVarArray>(env, N);
+		IloExpr expr(env);
+		f[i] = IloNumVarArray(env, N, 0, IloInfinity);
 		for (int j = 0; j < N; ++j){
-			f[i][j] = IloNumVarArray(env, K, 0, IloInfinity);
-			for (int k = 0; k < K; ++k){
-				model.add(f[i][j][k]);
-			}
+			model.add(f[i][j]);
+			//model.add(f[i][j] <= expr);
 		}
-	}*/
+	}
+
+
 
 	/*
 	//Gik = load of vehicle k after visiting node i
@@ -143,7 +144,6 @@ int main ( int argc, char **argv ) {
 			model.add(G[i][k]);
 		}
 	}
-
 	//Bik = time when vehicle k starts visiting node i
 	IloArray < IloNumVarArray > B(env, requests_number*2+2);
 	for (int i = 0; i <= requests_number*2 + 1; ++i) {
@@ -155,7 +155,6 @@ int main ( int argc, char **argv ) {
 			model.add(B[i][k]);
 		}
 	}
-
 	//Lik = the ride time of request i on vehicle k
 	IloArray < IloNumVarArray > L(env, requests_number*2+2);
 	for (int i = 0; i <= requests_number*2 + 1; ++i) {
@@ -183,23 +182,49 @@ int main ( int argc, char **argv ) {
 	
 	//CONSTRAINTS
 
+	//proibited arcs to all cars
+	for (int i = 0; i < N; ++i) {
+		for (int k = 0; k < K; ++k) {
+			model.add(X[i][i][k] == 0); //a car cannot make cycles (a node to itself arc)
+		}
+	}
+
+	for (int i = 1; i <= n; ++i) {
+		for (int k = 0; k < K; ++k) {
+			model.add(X[N-1][i][k] == 0); //end node to pickups
+			model.add(X[i][N-1][k] == 0); //pickups to end node
+			model.add(X[i][0][k] == 0); //if a car is on a pickup node ... it cannot get back to the start node
+		}
+	}
+
+	for (int i = n+1; i < N; ++i) {
+		for (int k = 0; k < K; ++k) {
+			model.add(X[0][i][k] == 0); //start node to delivers or end node
+			model.add(X[i][0][k] == 0); //delivers or end node to start node
+			model.add(X[N-1][i][k] == 0); //a car cannot leave end node to a delivers node
+		}
+	}
+
+
+
 	//Every request is served at most once: 
 	for (int i = 1; i <= n; ++i) {
 		IloExpr expr(env);
 		for (int k = 0; k < K; ++k) {
-			for (int j = 0; j < N; ++j) {
+			for (int j = 1; j < N; ++j) {
 				expr += X[i][j][k];
 			}
 		}
 		model.add(expr <= 1);
 	}
 	
+	
 	//Same vehicle serves the pickup and delivery:
 	for (int i = 1; i <= n; ++i) {
 		for (int k = 0; k < K; ++k) {
 			IloExpr expr1(env);
 			IloExpr expr2(env);
-			for (int j = 0; j < N; ++j) {
+			for (int j = 1; j < N; ++j) {
 				expr1 += X[i][j][k];
 				expr2 += X[n + i][j][k];
 			}
@@ -226,7 +251,7 @@ int main ( int argc, char **argv ) {
 	for (int i = 1; i <= n; ++i) {
 		for (int k = 0; k < K; ++k) {
 			IloExpr expr(env);
-			for (int j = 1; j <= n; ++j) {
+			for (int j = 1; j <= V; ++j) {
 				if(j == i) continue;
 				expr += X[i][j][k];
 			}
@@ -248,41 +273,40 @@ int main ( int argc, char **argv ) {
 	IloCplex cplex(model);
 	for (int k = 0; k < K; ++k) {
 		IloExpr expr(env);
-		for(int i = n+1; i < (N-1); ++i){
+		for(int i = n+1; i <= V; ++i){
 		//for (int i = 0; i < N; ++i) {
 			expr += X[i][N - 1][k];
 		}
 		model.add(expr == 1);
 	}
-
+	
+	
 	//Flow Constraints to each Car
-	/*for(int k = 0; k < K; ++k){
-		for (int i = 1; i < N; ++i){
-			IloExpr FC1(env);
-			IloExpr FC2(env);
-			for(int j = 0; j < N; ++j){
-				FC1 += (f[j][i][k]);
-			}
-			for(int j = 0; j < N; ++j){
-				FC2 += (f[i][j][k]);
-			}
-			model.add((FC1 - FC2) == 1);
+	for(int i = 1; i < (N-1); ++i){
+		IloExpr FC1(env);
+		IloExpr FC2(env);
+		for (int j = 0; j < N; ++j){
+			if(j == i) continue;
+			FC1 += f[i][j];
+			FC2 += f[j][i];
 		}	
+		//model.add( (FC1 - FC2) == RD[i-1]);
+		if(i <= n)  model.add((FC1-FC2) == RD[i-1]);
+		else       	model.add((FC1-FC2) == - (RD[i - n - 1]) );
 	}
 
-	for(int k = 0; k < K; ++k){
-		for (int i = 0; i < N; ++i){
-			for(int j = 0; j < N; j++){
+	for (int i = 0; i < N; ++i){		
+		for (int j = 0; j < N; ++j){
+			IloExpr expr(env);
 
-				IloExpr FC3(env);
-				IloExpr FC4(env);
-				FC3 = f[i][j][k];
-				FC4 = (N-1)*X[i][j][k];
-				model.add(FC3 <= FC4);
+			for (int k = 0; k < K; ++k) {
+				expr += VC[k] * X[i][j][k]; 
 			}
+
+			model.add(f[i][j] <= expr);
 		}
-	}*/
-	
+	}
+
 
 	IloCplex darop(model);
 	darop.solve();
@@ -291,7 +315,7 @@ int main ( int argc, char **argv ) {
 	for(int k = 0; k < K; ++k){
 		for (int i = 0; i < N; ++i){
 			for(int j = 0; j < N; ++j){
-				cout << "X[" << i << "]["<< j << "][" << k << "]: " << darop.getValue(X[i][j][k]) << "   ";	
+				cout << "X[" << i << "]["<< j << "][" << k << "]:" << darop.getValue(X[i][j][k]) << " ";	
 			}
 			cout << endl;		
 		}
@@ -303,6 +327,16 @@ int main ( int argc, char **argv ) {
 		}
 		cout << endl;
 	}
+	cout << "\n\n\n";
 
-	cout << "OBJ " << value << endl;
+	for (int j = 0; j < N; ++j){
+		for(int i = 0; i < N; ++i){
+			cout << "f[" << j << "][" << i << "]: " << darop.getValue(f[j][i]) << " ";
+		}
+		cout << endl;
+	}
+
+
+
+	cout << "\n\nOBJ " << value << endl;
 }
