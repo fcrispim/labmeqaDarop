@@ -298,7 +298,6 @@ int main ( int argc, char **argv ) {
 	for (int i = 0; i < N; ++i){		
 		for (int j = 0; j < N; ++j){
 			IloExpr expr(env);
-
 			for (int k = 0; k < K; ++k) {
 				expr += VC[k] * X[i][j][k]; 
 			}
@@ -306,7 +305,6 @@ int main ( int argc, char **argv ) {
 			model.add(f[i][j] <= expr);
 		}
 	}
-
 
 	IloCplex darop(model);
 	darop.solve();
@@ -328,7 +326,7 @@ int main ( int argc, char **argv ) {
 		cout << endl;
 	}
 	cout << "\n\n\n";
-
+	
 	for (int j = 0; j < N; ++j){
 		for(int i = 0; i < N; ++i){
 			cout << "f[" << j << "][" << i << "]: " << darop.getValue(f[j][i]) << " ";

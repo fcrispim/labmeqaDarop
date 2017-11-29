@@ -2,6 +2,7 @@
 #define __GLOBALS_H__
 
 #include <cstdio>
+#include <vector>
 #include "Graph.h"
 
 extern int K, N, V, n;

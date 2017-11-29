@@ -4,16 +4,16 @@ CPLEX_VERSION = 12.4
 N_BITS = $(shell getconf LONG_BIT)
 ifeq ($(N_BITS),32)
    ifeq ($(CPLEX_VERSION), 12.4)
-      SYSTEM  = x86-64_osx
+	  SYSTEM  = x86-64_osx
    else
-      SYSTEM = x86-64_osx
+	  SYSTEM = x86-64_osx
    endif
    BITS_OPTION = -m32
 else
    ifeq ($(CPLEX_VERSION), 12.4)
-      SYSTEM  = x86-64_osx
+	  SYSTEM  = x86-64_osx
    else
-      SYSTEM = x86-64_osx
+	  SYSTEM = x86-64_osx
    endif
    BITS_OPTION = -m64
 endif
@@ -62,8 +62,8 @@ OBJS = $(patsubst $(SRCDIR)/%.cpp, $(OBJDIR)/%.o, $(SRCS))
 
 #### regra principal, gera o executavel
 sol: $(OBJS) 
-	@echo  "\033[31m \nLinking all objects files: \033[0m"
-	$(CPPC) $(BITS_OPTION) $(OBJS) -o $@ $(CCLNFLAGS)
+		@echo  "\033[31m \nLinking all objects files: \033[0m"
+		$(CPPC) $(BITS_OPTION) $(OBJS) -o $@ $(CCLNFLAGS)
 ############################
 
 #inclui os arquivos de dependencias
@@ -72,20 +72,19 @@ sol: $(OBJS)
 #regra para cada arquivo objeto: compila e gera o arquivo de dependencias do arquivo objeto
 #cada arquivo objeto depende do .c e dos headers (informacao dos header esta no arquivo de dependencias gerado pelo compiler)
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	@echo  "\033[31m \nCompiling $<: \033[0m"
-	$(CPPC) $(CCFLAGS) -c $< -o $@
-	@echo  "\033[32m \ncreating $< dependency file: \033[0m"
-	$(CPPC) -std=c++0x  -MM $< > $(basename $@).d
-	@mv -f $(basename $@).d $(basename $@).d.tmp #proximas tres linhas colocam o diretorio no arquivo de dependencias (g++ nao coloca, surprisingly!)
-	@sed -e 's|.*:|$(basename $@).o:|' < $(basename $@).d.tmp > $(basename $@).d
-	@rm -f $(basename $@).d.tmp
+		@echo  "\033[31m \nCompiling $<: \033[0m"
+		$(CPPC) $(CCFLAGS) -c $< -o $@
+		@echo  "\033[32m \ncreating $< dependency file: \033[0m"
+		$(CPPC) -std=c++0x  -MM $< > $(basename $@).d
+		@mv -f $(basename $@).d $(basename $@).d.tmp #proximas tres linhas colocam o diretorio no arquivo de dependencias (g++ nao coloca, surprisingly!)
+		@sed -e 's|.*:|$(basename $@).o:|' < $(basename $@).d.tmp > $(basename $@).d
+		@rm -f $(basename $@).d.tmp
 
 #delete objetos e arquivos de dependencia
 clean:
-	@echo "\033[31mcleaning obj directory \033[0m"
-	@rm -f $(OBJDIR)/*.o $(OBJDIR)/*.d
-	@rm sol
+		@echo "\033[31mcleaning obj directory \033[0m"
+		@rm -f $(OBJDIR)/*.o $(OBJDIR)/*.d
+		@rm sol
 
 
 rebuild: clean sol
-

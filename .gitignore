@@ -1,2 +1,6 @@
 
 .DS_Store
+Makefile
+*.d
+*.o
+bc
