@@ -7,6 +7,7 @@
 #include "Graph.h"
 #include "globals.h"
 
+#define INF 10000
 
 using namespace std;
 
@@ -18,8 +19,10 @@ void readInstance(char *filename) {
 	fscanf( input_file, "%d %d", &n, &K);
 
 
-	RD.resize(n);
-	VC.resize(K);
+	RD.resize(n); //Request demand
+	VC.resize(K); //Vehicle capacity
+	RT.resize(n); //Max ride time
+	AL.resize(n); //Arrive time limit
 	
 	V = n*2;
 	N = V+2;
@@ -42,7 +45,13 @@ void readInstance(char *filename) {
 		fscanf(input_file, "%lf", &Y[i]);
 	}
 
-	
+	for (int i = 0; i < n; ++i){
+		fscanf(input_file, "%lf", &RT[i]);
+	}
+
+	for (int i = 0; i < n; ++i){
+		fscanf(input_file, "%lf", &AL[i]);
+	}
 	
 	//Creates Graph
 	G.resizeGraph(N);
@@ -50,21 +59,51 @@ void readInstance(char *filename) {
 	//Add for each vertex i a new node j using euclidean distance
 	for(int i = 1; i <= V; ++i){
 		for(int j = 1; j <= V; ++j){
-			if(i == j) continue;
-			Node node = Node(j, hypot( (X[i-1]-X[j-1]), (Y[i-1]-Y[j-1])) );
+			if(i == j){
+				matG[i][j] = 0;
+				continue;
+			}
+			double w = hypot( (X[i-1]-X[j-1]), (Y[i-1]-Y[j-1]));
+			Node node = Node(j, w );
 			G.addNode(node,i);
+			matG[i][j] = w;
 		}
 	}
 
+	matG[0][0] = matG[0][N-1] = matG[N-1][N-1] = matG[N-1][0] = INF;
+
 	//Add for vertex 0 edges with vertices in n
 	for(int i = 1; i <= n; ++i){
-		Node n(i, 0);
-		G.addNode(n, 0);
+		Node node(i, 0);
+		G.addNode(node, 0);
+
+		matG[0][i] = 0;
+		matG[0][(i+n)] = INF;
+
+		matG[i][0] = INF;
+		matG[(i+n)][0] = INF;	
+
+		matG[(i+n)][N-1] = 0;
+		matG[i][N-1] = INF;
+
+		matG[(N-1)][i] = INF;
+		matG[(N-1)][i+n] = INF;
+
 	}
 
 	for (int i = n+1; i <= V; ++i){
 		Node node((V+1), 0);
 		G.addNode(node, i );
+	}
+
+
+	for(int i = 0; i < N; ++i){
+		for(int j = 0; j < N ; ++j){
+			cout << "[" << i <<"][" << j << "]: ";
+			if (matG[i][j] == INF) cout << "INF  ";
+			else printf("%.2lf  ", matG[i][j]);
+		}
+		cout << endl;
 	}
 
 	G.printGraph();
@@ -132,41 +171,47 @@ int main ( int argc, char **argv ) {
 
 
 
-	/*
+	
 	//Gik = load of vehicle k after visiting node i
-	IloArray < IloNumVarArray > G(env, requests_number*2+2);
-	for (int i = 0; i <= requests_number*2 + 1; ++i) {
-		G[i] = IloNumVarArray(env, vehicles_number);
-		for (int k = 0; k < vehicles_number; ++k) {
-			char name[20];
-			sprintf(name, "G[%d][%d]", i, k);
-			G[i][k].setName(name);
-			model.add(G[i][k]);
+	IloArray < IloNumVarArray > g(env, N);
+	for (int i = 0; i < N; ++i) {
+		IloExpr expr(env);
+		g[i] = IloNumVarArray(env, K, 0, IloInfinity);
+		for (int k = 0; k < K; ++k) {
+			model.add(g[i][k]);
 		}
 	}
+
 	//Bik = time when vehicle k starts visiting node i
-	IloArray < IloNumVarArray > B(env, requests_number*2+2);
-	for (int i = 0; i <= requests_number*2 + 1; ++i) {
-		B[i] = IloNumVarArray(env, vehicles_number);
-		for (int k = 0; k < vehicles_number; ++k) {
-			char name[20];
-			sprintf(name, "B[%d][%d]", i, k);
-			B[i][k].setName(name);
+	IloArray < IloNumVarArray > B(env, N);
+	for (int i = 0; i < N; ++i) {
+		B[i] = IloNumVarArray(env, K,0, IloInfinity);
+		for (int k = 0; k < K; ++k) {
 			model.add(B[i][k]);
 		}
 	}
+
 	//Lik = the ride time of request i on vehicle k
-	IloArray < IloNumVarArray > L(env, requests_number*2+2);
-	for (int i = 0; i <= requests_number*2 + 1; ++i) {
-		L[i] = IloNumVarArray(env, vehicles_number);
-		for (int k = 0; k < vehicles_number; ++k) {
-			char name[20];
-			sprintf(name, "B[%d][%d]", i, k);
-			L[i][k].setName(name);
+	IloArray < IloNumVarArray > L(env, n);
+	for (int i = 0; i < n; ++i) {
+		L[i] = IloNumVarArray(env, K, 0, IloInfinity);
+		for (int k = 0; k < K; ++k) {
 			model.add(L[i][k]);
 		}
 	}
-	*/
+	
+	//M linearization variable for visit time checking
+	IloArray < IloArray< IloBoolVarArray > > M (env, N);
+	for (int i = 0; i < N; ++i) {
+		M[i] = IloArray<IloBoolVarArray> (env, N);
+		for (int j = 0; j < N; ++j) {
+			M[i][j] = IloBoolVarArray(env, K);
+			for (int k = 0; k < K; ++k) {
+				model.add(M[i][j][k]);
+			}
+		}
+	}
+
 
 	//OBJECTIVE FUNCTION 
 
@@ -280,7 +325,71 @@ int main ( int argc, char **argv ) {
 		model.add(expr == 1);
 	}
 	
-	
+
+	//Setting and checking vehicle load
+	/*for (int i = 1; i < N; ++i){
+		for(int j = 1; j < N; ++j){
+			for(int k = 0; k < K; ++k){
+				IloExpr expr(env);
+
+				if(i <= n)  expr += (g[i][k] + RD[i-1])*X[i][j][k];
+				else       	expr += (g[i][k] + RD[i-n-1])*X[i][j][k];
+
+				model.add(g[j][k] >= expr);
+			}
+		}
+	}
+
+
+	for (int i = 1; i <N; ++i){
+		for(int k = 0; k < K; ++k){
+
+			IloExpr expr(env);
+			expr += g[i][k];
+			model.add(expr <= VC[k]);
+		}
+	}*/
+
+	//Setting and checking visit time with linearization
+	for (int i = 0; i < N; ++i){
+		for(int j = 0; j < N; ++j){
+			for(int k = 0; k < K; ++k){
+				IloExpr expr(env);
+
+				expr = B[i][k] + matG[i][j] - 99999*(1- X[i][j][k]);
+				model.add(B[j][k] >= expr);
+			}
+		}
+	}
+
+	//Setting and checking visit time, time arrive limits
+	for (int i = 1; i < (N-1); ++i){
+		for(int k = 0; k < K; ++k){
+			IloExpr expr(env);
+			expr = B[i][k];
+			if (i <= n) model.add(expr <= AL[i-1]);
+			else		model.add(expr <= AL[i-n-1]);
+		}
+	}
+
+	//Setting and checking ride time
+	for (int i = 1; i <= n; ++i){
+		for(int k = 0; k < K; k++){
+			IloExpr expr (env);
+			expr = B[(n+i)][k] - B[i][k];
+			model.add(L[i-1][k] == expr);
+		}		
+	}
+
+	for (int i = 1; i <= n; ++i){
+		for(int k = 0; k < K; k++){
+			IloExpr expr (env);
+			expr = L[i-1][k];
+			model.add(expr <= RT[i-1]);
+		}	
+	}
+
+
 	//Flow Constraints to each Car
 	for(int i = 1; i < (N-1); ++i){
 		IloExpr FC1(env);
@@ -333,8 +442,14 @@ int main ( int argc, char **argv ) {
 		}
 		cout << endl;
 	}
+	cout << "\n\n\n";
 
-
+	for (int i = 0; i < N; ++i){
+		for(int k = 0; k < K; ++k){
+			cout << "B[" << i << "][" << k << "]: " << darop.getValue(B[i][k]) << " ";
+		}
+		cout << endl;
+	}
 
 	cout << "\n\nOBJ " << value << endl;
 }
