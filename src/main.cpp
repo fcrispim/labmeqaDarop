@@ -355,7 +355,6 @@ int main ( int argc, char **argv ) {
 		for(int j = 0; j < N; ++j){
 			for(int k = 0; k < K; ++k){
 				IloExpr expr(env);
-
 				expr = B[i][k] + matG[i][j] - 99999*(1- X[i][j][k]);
 				model.add(B[j][k] >= expr);
 			}
@@ -378,8 +377,7 @@ int main ( int argc, char **argv ) {
 			IloExpr expr (env);
 			expr = B[(n+i)][k] - B[i][k];
 			model.add(L[i-1][k] == expr);
-		}		
-	}
+
 
 	for (int i = 1; i <= n; ++i){
 		for(int k = 0; k < K; k++){
