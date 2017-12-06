@@ -377,6 +377,8 @@ int main ( int argc, char **argv ) {
 			IloExpr expr (env);
 			expr = B[(n+i)][k] - B[i][k];
 			model.add(L[i-1][k] == expr);
+		}
+	}
 
 
 	for (int i = 1; i <= n; ++i){
@@ -397,9 +399,14 @@ int main ( int argc, char **argv ) {
 			FC1 += f[i][j];
 			FC2 += f[j][i];
 		}	
+		IloExpr RHS(env);
+		for (int k = 0; k < K; ++k) {
+			if(i <= n) RHS += Y[i-1][k];
+			else       RHS += Y[i - n - 1][k];
+		}
 		//model.add( (FC1 - FC2) == RD[i-1]);
-		if(i <= n)  model.add((FC1-FC2) == RD[i-1]);
-		else       	model.add((FC1-FC2) == - (RD[i - n - 1]) );
+		if(i <= n)  model.add((FC1-FC2) == RD[i-1]*RHS);
+		else       	model.add((FC1-FC2) == - (RD[i - n - 1]*RHS) );
 	}
 
 	for (int i = 0; i < N; ++i){		
