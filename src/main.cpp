@@ -136,23 +136,26 @@ int main ( int argc, char **argv ) {
 	for(int i = 0; i < n; ++i) {
 		Y[i] = IloBoolVarArray(env, K);
 		for (int k = 0; k < K; ++k) {
-			//char name[20];
-			//sprintf(name, "Y[%d][%d]", i, k);
-			//Y[i][k].setName(name);
+			char name[20];
+			sprintf(name, "Y(%d,%d)", i, k);
+			Y[i][k].setName(name);
 			model.add(Y[i][k]);
 		}
 	}
 
 	//create and add to the model the variable X ... Xijk = 1 if the vehicle k goes straight from node i to j.
 	IloArray < IloArray< IloBoolVarArray > > X (env, N);
+	vector< vector<bool> > arcoInvalido(N, vector<bool>(N, false));
+
 	for (int i = 0; i < N; ++i) {
 		X[i] = IloArray<IloBoolVarArray> (env, N);
 		for (int j = 0; j < N; ++j) {
+			if(i == j) continue;
 			X[i][j] = IloBoolVarArray(env, K);
 			for (int k = 0; k < K; ++k) {
-				//char name[20];
-				//sprintf(name, "X[%d][%d][%d]", i, j, k);
-				//X[i][j][k].setName(name);
+				char name[20];
+				sprintf(name, "X(%d,%d,%d)", i, j, k);
+				X[i][j][k].setName(name);
 				model.add(X[i][j][k]);
 			}
 		}
@@ -164,13 +167,13 @@ int main ( int argc, char **argv ) {
 		IloExpr expr(env);
 		f[i] = IloNumVarArray(env, N, 0, IloInfinity);
 		for (int j = 0; j < N; ++j){
+			char name[20];
+			sprintf(name, "F(%d,%d)", i, j);
+			f[i][j].setName(name);
 			model.add(f[i][j]);
 			//model.add(f[i][j] <= expr);
 		}
 	}
-
-
-
 	
 	//Gik = load of vehicle k after visiting node i
 	IloArray < IloNumVarArray > g(env, N);
@@ -178,6 +181,9 @@ int main ( int argc, char **argv ) {
 		IloExpr expr(env);
 		g[i] = IloNumVarArray(env, K, 0, IloInfinity);
 		for (int k = 0; k < K; ++k) {
+			char name[20];
+			sprintf(name, "G(%d,%d)", i, k);
+			g[i][k].setName(name);
 			model.add(g[i][k]);
 		}
 	}
@@ -187,6 +193,9 @@ int main ( int argc, char **argv ) {
 	for (int i = 0; i < N; ++i) {
 		B[i] = IloNumVarArray(env, K,0, IloInfinity);
 		for (int k = 0; k < K; ++k) {
+			char name[20];
+			sprintf(name, "B(%d,%d)", i, k);
+			B[i][k].setName(name);
 			model.add(B[i][k]);
 		}
 	}
@@ -196,6 +205,9 @@ int main ( int argc, char **argv ) {
 	for (int i = 0; i < n; ++i) {
 		L[i] = IloNumVarArray(env, K, 0, IloInfinity);
 		for (int k = 0; k < K; ++k) {
+			char name[20];
+			sprintf(name, "L(%d,%d)", i, k);
+			L[i][k].setName(name);
 			model.add(L[i][k]);
 		}
 	}
@@ -207,7 +219,10 @@ int main ( int argc, char **argv ) {
 		for (int j = 0; j < N; ++j) {
 			M[i][j] = IloBoolVarArray(env, K);
 			for (int k = 0; k < K; ++k) {
-				model.add(M[i][j][k]);
+				char name[20];
+				sprintf(name, "M(%d,%d,%d)", i, j, k);
+				M[i][j][k].setName(name);
+				//model.add(M[i][j][k]);
 			}
 		}
 	}
@@ -229,25 +244,33 @@ int main ( int argc, char **argv ) {
 
 	//proibited arcs to all cars
 	for (int i = 0; i < N; ++i) {
-		for (int k = 0; k < K; ++k) {
-			model.add(X[i][i][k] == 0); //a car cannot make cycles (a node to itself arc)
-		}
+		//for (int k = 0; k < K; ++k) {
+			arcoInvalido[i][i] = true;
+			//model.add(X[i][i][k] == 0); //a car cannot make cycles (a node to itself arc)
+		//}
 	}
 
 	for (int i = 1; i <= n; ++i) {
-		for (int k = 0; k < K; ++k) {
-			model.add(X[N-1][i][k] == 0); //end node to pickups
-			model.add(X[i][N-1][k] == 0); //pickups to end node
-			model.add(X[i][0][k] == 0); //if a car is on a pickup node ... it cannot get back to the start node
-		}
+		//for (int k = 0; k < K; ++k) {
+			arcoInvalido[N-1][i] = true;
+			arcoInvalido[i][N-1] = true;
+			arcoInvalido[i][0]   = true;
+			//model.add(X[N-1][i][k] == 0); //end node to pickups
+			//model.add(X[i][N-1][k] == 0); //pickups to end node
+			//model.add(X[i][0][k] == 0); //if a car is on a pickup node ... it cannot get back to the start node
+		//}
 	}
 
 	for (int i = n+1; i < N; ++i) {
-		for (int k = 0; k < K; ++k) {
-			model.add(X[0][i][k] == 0); //start node to delivers or end node
-			model.add(X[i][0][k] == 0); //delivers or end node to start node
-			model.add(X[N-1][i][k] == 0); //a car cannot leave end node to a delivers node
-		}
+		//for (int k = 0; k < K; ++k) {
+			arcoInvalido[0][i] = true;
+			arcoInvalido[i][0] = true;
+			arcoInvalido[N-1][i] = true;
+			
+			//model.add(X[0][i][k] == 0); //start node to delivers or end node
+			//model.add(X[i][0][k] == 0); //delivers or end node to start node
+			//model.add(X[N-1][i][k] == 0); //a car cannot leave end node to a delivers node
+		//}
 	}
 
 
@@ -257,7 +280,8 @@ int main ( int argc, char **argv ) {
 		IloExpr expr(env);
 		for (int k = 0; k < K; ++k) {
 			for (int j = 1; j < N; ++j) {
-				expr += X[i][j][k];
+				if(!arcoInvalido[i][j])
+					expr += X[i][j][k];
 			}
 		}
 		model.add(expr <= 1);
@@ -270,8 +294,10 @@ int main ( int argc, char **argv ) {
 			IloExpr expr1(env);
 			IloExpr expr2(env);
 			for (int j = 1; j < N; ++j) {
-				expr1 += X[i][j][k];
-				expr2 += X[n + i][j][k];
+				if(!arcoInvalido[i][j])
+					expr1 += X[i][j][k];
+				if(!arcoInvalido[n+i][j])
+					expr2 += X[n + i][j][k];
 			}
 			model.add( (expr1 - expr2) == 0);
 		}
@@ -284,9 +310,10 @@ int main ( int argc, char **argv ) {
 			IloExpr expr1(env);
 			IloExpr expr2(env);
 			for (int j = 0; j < N; ++j) {
-				if(j == i) continue;
-				expr1 += X[j][i][k];
-				expr2 += X[i][j][k];
+				if(!arcoInvalido[j][i])
+					expr1 += X[j][i][k];
+				if(!arcoInvalido[i][j])
+					expr2 += X[i][j][k];
 			}
 			model.add( (expr1 - expr2) == 0);
 		}
@@ -297,8 +324,8 @@ int main ( int argc, char **argv ) {
 		for (int k = 0; k < K; ++k) {
 			IloExpr expr(env);
 			for (int j = 1; j <= V; ++j) {
-				if(j == i) continue;
-				expr += X[i][j][k];
+				if(!arcoInvalido[i][j])
+					expr += X[i][j][k];
 			}
 			model.add(expr == Y[i-1][k]);
 		}
@@ -309,7 +336,8 @@ int main ( int argc, char **argv ) {
 		IloExpr expr(env);
 		for (int j = 1; j <= n; ++j) {
 		//for (int j = 0; j < N; ++j) {
-			expr += X[0][j][k];
+			if(!arcoInvalido[0][j])
+				expr += X[0][j][k];
 		}
 		model.add(expr == 1);
 	}
@@ -320,7 +348,8 @@ int main ( int argc, char **argv ) {
 		IloExpr expr(env);
 		for(int i = n+1; i <= V; ++i){
 		//for (int i = 0; i < N; ++i) {
-			expr += X[i][N - 1][k];
+			if(!arcoInvalido[i][N-1])
+				expr += X[i][N - 1][k];
 		}
 		model.add(expr == 1);
 	}
@@ -355,8 +384,10 @@ int main ( int argc, char **argv ) {
 		for(int j = 0; j < N; ++j){
 			for(int k = 0; k < K; ++k){
 				IloExpr expr(env);
-				expr = B[i][k] + matG[i][j] - 99999*(1- X[i][j][k]);
-				model.add(B[j][k] >= expr);
+				if(!arcoInvalido[i][j]) {
+					expr = B[i][k] + matG[i][j] - 99999*(1- X[i][j][k]);
+					model.add(B[j][k] >= expr);
+				}
 			}
 		}
 	}
@@ -395,9 +426,10 @@ int main ( int argc, char **argv ) {
 		IloExpr FC1(env);
 		IloExpr FC2(env);
 		for (int j = 0; j < N; ++j){
-			if(j == i) continue;
-			FC1 += f[i][j];
-			FC2 += f[j][i];
+			if(!arcoInvalido[i][j])
+				FC1 += f[i][j];
+			if(!arcoInvalido[j][i])
+				FC2 += f[j][i];
 		}	
 		IloExpr RHS(env);
 		for (int k = 0; k < K; ++k) {
@@ -406,28 +438,33 @@ int main ( int argc, char **argv ) {
 		}
 		//model.add( (FC1 - FC2) == RD[i-1]);
 		if(i <= n)  model.add((FC1-FC2) == RD[i-1]*RHS);
-		else       	model.add((FC1-FC2) == - (RD[i - n - 1]*RHS) );
+		else       	model.add((FC1-FC2) == -(RD[i - n - 1]*RHS) );
 	}
 
 	for (int i = 0; i < N; ++i){		
 		for (int j = 0; j < N; ++j){
 			IloExpr expr(env);
 			for (int k = 0; k < K; ++k) {
-				expr += VC[k] * X[i][j][k]; 
+				if(!arcoInvalido[i][j])
+					expr += VC[k] * X[i][j][k]; 
 			}
-
 			model.add(f[i][j] <= expr);
 		}
 	}
 
 	IloCplex darop(model);
+	darop.setParam(IloCplex::Threads, 1);
 	darop.solve();
+
 	double value = darop.getObjValue();
+
+	darop.exportModel("darop.lp");
 
 	for(int k = 0; k < K; ++k){
 		for (int i = 0; i < N; ++i){
 			for(int j = 0; j < N; ++j){
-				cout << "X[" << i << "]["<< j << "][" << k << "]:" << darop.getValue(X[i][j][k]) << " ";	
+				if(!arcoInvalido[i][j])
+					cout << "X[" << i << "]["<< j << "][" << k << "]:" << darop.getValue(X[i][j][k]) << " ";	
 			}
 			cout << endl;		
 		}
@@ -443,7 +480,8 @@ int main ( int argc, char **argv ) {
 	
 	for (int j = 0; j < N; ++j){
 		for(int i = 0; i < N; ++i){
-			cout << "f[" << j << "][" << i << "]: " << darop.getValue(f[j][i]) << " ";
+			if(!arcoInvalido[j][i])	
+				cout << "f[" << j << "][" << i << "]: " << darop.getValue(f[j][i]) << " ";
 		}
 		cout << endl;
 	}
