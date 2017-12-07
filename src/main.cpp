@@ -212,8 +212,9 @@ int main ( int argc, char **argv ) {
 		}
 	}
 	
+	int M = 99999;
 	//M linearization variable for visit time checking
-	IloArray < IloArray< IloBoolVarArray > > M (env, N);
+	/*IloArray < IloArray< IloBoolVarArray > > M (env, N);
 	for (int i = 0; i < N; ++i) {
 		M[i] = IloArray<IloBoolVarArray> (env, N);
 		for (int j = 0; j < N; ++j) {
@@ -226,6 +227,7 @@ int main ( int argc, char **argv ) {
 			}
 		}
 	}
+*/
 
 
 	//OBJECTIVE FUNCTION 
@@ -385,7 +387,7 @@ int main ( int argc, char **argv ) {
 			for(int k = 0; k < K; ++k){
 				IloExpr expr(env);
 				if(!arcoInvalido[i][j]) {
-					expr = B[i][k] + matG[i][j] - 99999*(1- X[i][j][k]);
+					expr = B[i][k] + matG[i][j] - M *(1- X[i][j][k]);
 					model.add(B[j][k] >= expr);
 				}
 			}
@@ -436,7 +438,6 @@ int main ( int argc, char **argv ) {
 			if(i <= n) RHS += Y[i-1][k];
 			else       RHS += Y[i - n - 1][k];
 		}
-		//model.add( (FC1 - FC2) == RD[i-1]);
 		if(i <= n)  model.add((FC1-FC2) == RD[i-1]*RHS);
 		else       	model.add((FC1-FC2) == -(RD[i - n - 1]*RHS) );
 	}
